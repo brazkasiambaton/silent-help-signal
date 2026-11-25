@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Silent Help Signal</title>
+<style>
+:root{--bg:#f7f6f2;--sf:#fff;--tx:#1d1d1b;--mu:#66655f;--bd:#e2e0d8;--ac:#2f5fd0;--c-see:#2563eb;--c-hear:#b45309;--c-fast:#e11d48;--ok:#15803d;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root{--bg:#141413;--sf:#1f1f1d;--tx:#f1efe8;--mu:#a3a198;--bd:#34332f;--ac:#7c9cf2;--c-see:#3b6fe6;--c-hear:#c2620c;--c-fast:#e8365d;--ok:#4ade80;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:980px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:clamp(28px,6vw,40px);line-height:1.1;margin:8px 0 6px;letter-spacing:-.02em}
+h2{font-size:20px;margin:0 0 6px}
+p{margin:0 0 10px}
+.mu{color:var(--mu)}
+.top{display:flex;align-items:center;gap:12px;margin-bottom:8px;min-height:40px}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;border:1px solid var(--bd);background:var(--sf);border-radius:12px;padding:10px 16px;min-height:44px}
+button:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,input:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+.pri{background:var(--ac);border-color:var(--ac);color:#fff;font-weight:600}
+.ghost{background:transparent}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));margin-top:20px}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:18px;padding:18px}
+.row{display:flex;gap:8px;margin-top:10px}
+input{flex:1;min-width:0;border:1px solid var(--bd);border-radius:12px;padding:10px 14px;background:var(--bg);text-transform:uppercase;letter-spacing:.2em;font-weight:700;text-align:center;font-size:20px}
+.steps{counter-reset:s;padding:0;list-style:none;margin:10px 0 0}
+.steps li{counter-increment:s;padding-left:34px;position:relative;margin-bottom:10px}
+.steps li::before{content:counter(s);position:absolute;left:0;top:1px;width:24px;height:24px;border-radius:50%;background:var(--ac);color:#fff;font-size:13px;font-weight:700;display:grid;place-items:center}
+.err{border-color:var(--c-fast)}
+.status{font-size:14px;color:var(--mu);margin:0 0 12px}
+.btns{display:grid;gap:12px}
+.sig{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;border:0;border-radius:18px;padding:20px;min-height:104px;color:#fff;transition:transform .08s,box-shadow .15s}
+.sig.see{background:var(--c-see)}.sig.hear{background:var(--c-hear)}.sig.fast{background:var(--c-fast)}
+.sig .big{font-size:26px;font-weight:700}.sig .sub{font-size:14px;opacity:.92}
+.sig[aria-pressed="true"]{box-shadow:0 0 0 4px var(--bg),0 0 0 8px currentColor;transform:scale(.98)}
+.sig[aria-pressed="true"] .big::after{content:" · sent";font-weight:500;font-size:16px}
+.toast{min-height:24px;color:var(--ok);font-weight:600;margin:10px 0 0}
+.note{font-size:13px;color:var(--mu);margin-top:8px;word-break:break-all}
+.code{font:700 clamp(34px,8vw,52px)/1 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.18em}
+.lhead{display:flex;flex-wrap:wrap;align-items:flex-start;gap:14px;justify-content:space-between;margin-bottom:14px}
+.cards{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.sc{background:var(--sf);border:1px solid var(--bd);border-left:8px solid var(--bd);border-radius:18px;padding:16px}
+.sc.see{--k:var(--c-see)}.sc.hear{--k:var(--c-hear)}.sc.fast{--k:var(--c-fast)}
+.sc.on{border-left-color:var(--k)}
+.sc.hot{background:color-mix(in srgb,var(--k) 14%,var(--sf));animation:pu 1.6s ease-in-out infinite}
+@keyframes pu{50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--k) 25%,transparent)}}
+@media (prefers-reduced-motion:reduce){.sc.hot{animation:none}}
+.sc .n{font-size:64px;font-weight:800;line-height:1;color:var(--k)}
+.sc .w{font-size:14px;color:var(--mu);margin:6px 0 10px}
+.log{margin-top:18px}.log li{font-size:14px;margin-bottom:4px}
+.compact .hint,.compact .log,.compact .meta,.compact .w,.compact .qr{display:none}
+.compact .cards{grid-template-columns:repeat(3,1fr);gap:8px}
+.compact .sc{padding:10px}.compact .n{font-size:34px}.compact h2{font-size:15px}
+.phone{max-width:380px;margin:0 auto;border:2px solid var(--bd);border-radius:28px;padding:18px;background:var(--sf)}
+.demo{display:grid;gap:22px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));align-items:start;margin-top:14px}
+.lab{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--mu);margin-bottom:8px;font-weight:700}
+</style>
+</head>
+<body>
+<main id="app"></main>
+
+<!-- 1) PASTE YOUR FIREBASE CONFIG HERE (see README.md) -->
+<script>
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAMwvIkvo8f07gqYFOSi254yU0qKJACvNM",
+  authDomain: "silent-help-signal-9ba43.firebaseapp.com",
+  databaseURL: "https://silent-help-signal-9ba43-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "silent-help-signal-9ba43",
+  storageBucket: "silent-help-signal-9ba43.firebasestorage.app",
+  messagingSenderId: "36663237687",
+  appId: "1:36663237687:web:9c1a19b351fab6ae63b3b2",
+  measurementId: "G-ZMPVLG8BT6"
+};
+</script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+"use strict";
+const CONFIGURED=!JSON.stringify(FIREBASE_CONFIG).includes("PASTE");
+const SIGS=[
+ {k:"see",t:"Can’t see",h:"Zoom in or enlarge the slide"},
+ {k:"hear",t:"Can’t hear",h:"Speak louder or closer to the mic"},
+ {k:"fast",t:"Too fast",h:"Slow down and pause"}];
+const KEYS=SIGS.map(s=>s.k);
+const lab=k=>SIGS.find(s=>s.k===k).t;
+const app=document.getElementById("app");
+const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
+const withTimeout=(p,ms)=>Promise.race([p,new Promise((_,j)=>setTimeout(()=>j(new Error("Timed out. Check the internet connection and the database URL.")),ms))]);
+let cleanups=[];
+const cleanAll=()=>{cleanups.forEach(f=>{try{f()}catch(e){}});cleanups=[]};
+
+/* ---------- Firebase adapter ---------- */
+function ensureFb(){
+ if(!CONFIGURED)throw new Error("Firebase is not configured yet. Paste your firebaseConfig at the top of index.html (see README.md).");
+ if(!window.firebase||!firebase.database)throw new Error("Could not load the Firebase library. Check the internet connection.");
+ if(!firebase.apps.length)firebase.initializeApp(FIREBASE_CONFIG);
+ return firebase.database();
+}
+function fbNet(db,code,role){
+ const base=db.ref("sessions/"+code),id=Math.random().toString(36).slice(2,10);
+ const me=base.child((role==="student"?"students/":"lecturers/")+id),TS=firebase.database.ServerValue.TIMESTAMP;
+ let sigs=[],online=false;const subs=new Set();
+ const write=()=>{const o={t:TS};if(role==="student"){o.sigs={};sigs.forEach(k=>{o.sigs[k]=true})}return me.set(o).catch(()=>{})};
+ const conn=db.ref(".info/connected");
+ const onConn=sn=>{online=sn.val()===true;if(online){me.onDisconnect().remove();write()}subs.forEach(f=>f())};
+ conn.on("value",onConn);
+ const snapOf=v=>{v=v||{};
+  const st=Object.values(v.students||{}).map(s=>Object.keys((s&&s.sigs)||{}).filter(k=>KEYS.includes(k)));
+  return{students:st,lect:Object.keys(v.lecturers||{}).length,online}};
+ return{
+  set(s){sigs=s.slice();return write()},
+  sub(cb){let last=null;
+   const h=sn=>{last=sn.val();cb(snapOf(last))},f=()=>cb(snapOf(last));
+   subs.add(f);
+   base.on("value",h,err=>cb({students:[],lect:0,online,error:err&&err.message||"read error"}));
+   return()=>{subs.delete(f);base.off("value",h)}},
+  fixed(k){return base.child("fixed").set({sig:k,at:TS}).catch(()=>{})},
+  onFixed(cb){let init=true;const r=base.child("fixed");
+   const h=sn=>{if(init){init=false;return}const v=sn.val();if(v&&KEYS.includes(v.sig))cb(v.sig)};
+   r.on("value",h);return()=>r.off("value",h)},
+  leave(){conn.off("value",onConn);try{me.onDisconnect().cancel()}catch(e){}me.remove().catch(()=>{})}};
+}
+/* ---------- local demo adapter ---------- */
+function demoBus(){
+ const b={mine:[],sim:Array.from({length:12},()=>[]),subs:new Set(),fx:new Set()};
+ const snap=()=>({students:[b.mine,...b.sim],lect:1,online:true});
+ const emit=()=>b.subs.forEach(f=>f(snap()));
+ b.net={set(s){b.mine=s;emit()},sub(cb){b.subs.add(cb);cb(snap());return()=>b.subs.delete(cb)},
+  fixed(k){b.mine=b.mine.filter(x=>x!==k);b.sim=b.sim.map(a=>a.filter(x=>x!==k));b.fx.forEach(f=>f(k));emit();return Promise.resolve()},
+  onFixed(cb){b.fx.add(cb);return()=>b.fx.delete(cb)}};
+ b.simulate=()=>{b.sim=b.sim.map(()=>Math.random()<.4?[KEYS[Math.floor(Math.random()*3)]]:[]);emit()};
+ b.clear=()=>{b.sim=b.sim.map(()=>[]);emit()};
+ return b;
+}
+
+/* ---------- student view ---------- */
+function studentView(host,net){
+ let mine=[];host.replaceChildren();
+ const status=el("p","status","Connecting…"),grid=el("div","btns"),toast=el("p","toast");
+ toast.setAttribute("role","status");
+ const btns=SIGS.map(s=>{const b=el("button","sig "+s.k);b.type="button";b.setAttribute("aria-pressed","false");
+  b.append(el("span","big",s.t),el("span","sub",s.h));
+  b.onclick=()=>{mine=mine.includes(s.k)?mine.filter(x=>x!==s.k):[...mine,s.k];try{navigator.vibrate&&navigator.vibrate(25)}catch(e){}push()};
+  grid.append(b);return b});
+ const cancel=el("button","ghost","Cancel my signals");cancel.type="button";cancel.style.marginTop="14px";
+ cancel.onclick=()=>{mine=[];push()};
+ host.append(status,grid,cancel,toast,el("p","note","Anonymous: the lecturer only sees how many students pressed each button, never who."));
+ function push(){btns.forEach((b,i)=>b.setAttribute("aria-pressed",String(mine.includes(SIGS[i].k))));cancel.disabled=!mine.length;net.set(mine.slice())}
+ push();
+ const u1=net.sub(s=>{status.textContent=s.error?"Cannot reach the session: "+s.error:!s.online?"Offline. Reconnecting…":s.lect?"Connected. The lecturer is online.":"Connected. Waiting for the lecturer to join…"});
+ const u2=net.onFixed(k=>{if(mine.includes(k)){mine=mine.filter(x=>x!==k);push();toast.textContent="Lecturer adjusted: "+lab(k)+" ✓"}});
+ return()=>{u1&&u1();u2&&u2()};
+}
+
+/* ---------- lecturer view ---------- */
+function lecturerView(host,net,code,link){
+ host.replaceChildren();
+ const first={},counts={},log=[];
+ const head=el("div","lhead"),left=el("div","meta"),right=el("div");
+ right.style.cssText="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap";
+ if(code){left.append(el("div","lab","Session code"),el("div","code",code.toUpperCase()))}
+ const tot=el("p","status","0 students connected");tot.style.marginTop="8px";left.append(tot);
+ if(link){left.append(el("p","note",link));
+  const q=el("div","qr");q.style.cssText="background:#fff;padding:10px;border-radius:12px;line-height:0";
+  try{new QRCode(q,{text:link,width:132,height:132,correctLevel:QRCode.CorrectLevel.M});right.append(q)}catch(e){}}
+ const cb=el("button","ghost","Corner mode");cb.type="button";cb.setAttribute("aria-pressed","false");
+ cb.onclick=()=>{const c=host.classList.toggle("compact");cb.setAttribute("aria-pressed",String(c));cb.textContent=c?"Full view":"Corner mode"};
+ right.append(cb);head.append(left,right);
+ const cards=el("div","cards"),els={};
+ SIGS.forEach(s=>{const c=el("div","sc "+s.k),n=el("div","n","0"),w=el("div","w","No signals"),f=el("button","ghost","Mark as fixed");
+  f.type="button";f.disabled=true;
+  f.onclick=()=>{const secs=first[s.k]?Math.round((Date.now()-first[s.k])/1000):0;
+   log.unshift({t:s.t,n:counts[s.k],secs});log.length=Math.min(log.length,5);delete first[s.k];renderLog();net.fixed(s.k)};
+  c.append(el("h2",null,s.t),el("div","hint mu",s.h),n,w,f);cards.append(c);els[s.k]={c,n,w,f}});
+ const logBox=el("div","log"),ul=el("ul");ul.style.cssText="padding-left:18px;margin:6px 0 0";
+ logBox.append(el("div","lab","Response log (target: within 5 s)"),ul);
+ function renderLog(){ul.replaceChildren();
+  if(!log.length)ul.append(el("li","mu","Nothing yet. Mark a signal as fixed after you adjust."));
+  log.forEach(l=>ul.append(el("li",null,l.t+" · "+l.n+" student"+(l.n===1?"":"s")+" · fixed after "+l.secs+" s "+(l.secs<=5?"✓":"(slower than 5 s)"))))}
+ renderLog();host.append(head,cards,logBox);
+ function paint(){SIGS.forEach(s=>{const e=els[s.k],n=counts[s.k]||0;e.n.textContent=n;e.f.disabled=!n;
+  e.c.classList.toggle("on",n>0);e.c.classList.toggle("hot",n>=3);
+  e.w.textContent=n&&first[s.k]?"Waiting "+Math.round((Date.now()-first[s.k])/1000)+" s":"No signals"})}
+ const u1=net.sub(snap=>{const t=snap.students.length;
+  tot.textContent=snap.error?"Cannot reach the session: "+snap.error:!snap.online?"Offline. Reconnecting…":t+" student"+(t===1?"":"s")+" connected";
+  SIGS.forEach(s=>{const n=snap.students.filter(a=>a.includes(s.k)).length;counts[s.k]=n;
+   if(n&&!first[s.k])first[s.k]=Date.now();if(!n)delete first[s.k]});paint()});
+ const iv=setInterval(paint,1000);
+ return()=>{u1&&u1();clearInterval(iv)};
+}
+
+/* ---------- screens ---------- */
+function screen(title,back){
+ cleanAll();app.replaceChildren();
+ const top=el("div","top");
+ if(back){const b=el("button","ghost","← Back");b.type="button";b.onclick=()=>{cleanAll();history.replaceState(null,"",location.pathname+location.search);home()};top.append(b)}
+ top.append(el("strong",null,title||"Silent Help Signal"));app.append(top);
+ const body=el("div");app.append(body);return body;
+}
+function fail(body,msg){
+ body.replaceChildren();const c=el("div","card err");
+ c.append(el("h2",null,"Couldn’t connect"),el("p",null,msg));
+ const b=el("button","pri","Try the demo instead");b.type="button";b.onclick=demo;c.append(b);body.append(c);
+}
+function home(){
+ cleanAll();app.replaceChildren();
+ app.append(el("p","mu","Inclusive learning · Group 1"),el("h1",null,"Silent Help Signal"),
+  el("p","mu","A quiet, anonymous way to tell the lecturer “can’t see,” “can’t hear,” or “too fast.”"));
+ if(!CONFIGURED){const w=el("div","card err");w.style.marginTop="14px";
+  w.append(el("h2",null,"Setup needed"),el("p",null,"Paste your Firebase config at the top of index.html to enable live sessions (see README.md). The demo works without it."));app.append(w)}
+ const g=el("div","grid");
+ const s=el("div","card");s.append(el("h2",null,"I’m a student"),el("p","mu","Scan the lecturer’s QR code, or enter the 4-character code."));
+ const row=el("div","row"),inp=el("input");inp.maxLength=4;inp.placeholder="ABCD";inp.setAttribute("aria-label","Session code");inp.autocomplete="off";
+ const jb=el("button","pri","Join");jb.type="button";row.append(inp,jb);s.append(row);
+ const msg=el("p","note");s.append(msg);
+ const go=()=>{const c=inp.value.trim().toLowerCase();if(!/^[a-z0-9]{4}$/.test(c)){msg.textContent="Please enter exactly 4 letters or digits.";return}start("student",c)};
+ jb.onclick=go;inp.onkeydown=e=>{if(e.key==="Enter")go()};
+ const l=el("div","card");l.append(el("h2",null,"I’m a lecturer"),el("p","mu","Start a session, then show the QR code on the projected slides."));
+ const lb=el("button","pri","Start a session");lb.type="button";lb.onclick=()=>start("lecturer","");l.append(lb);
+ const d=el("div","card");d.append(el("h2",null,"Try the demo"),el("p","mu","See the student phone and lecturer dashboard side by side on one screen."));
+ const db=el("button",null,"Open demo");db.type="button";db.onclick=demo;d.append(db);
+ g.append(s,l,d);app.append(g);
+ const how=el("div","card");how.style.marginTop="14px";how.append(el("h2",null,"How it works"));
+ const ol=el("ol","steps");
+ ["The lecturer starts a session and shows the QR code on the projected slides.",
+  "A student scans it with their own phone and taps one of three buttons. No app, no name.",
+  "The lecturer sees a live count per signal, adjusts, then taps “Mark as fixed.” Students are notified and their signal clears."]
+  .forEach(t=>ol.append(el("li",null,t)));
+ how.append(ol);app.append(how);
+}
+async function start(role,code){
+  if(!CONFIGURED){
+    demo();
+    return;
+  }
+  
+ const body=screen(role==="student"?"Student":"Lecturer",true);
+ body.append(el("p","mu","Connecting…"));
+ let db;try{db=ensureFb()}catch(e){fail(body,e.message);return}
+ try{
+  if(role==="lecturer"){
+   const ch="abcdefghjkmnpqrstuvwxyz23456789";code="";
+   for(let i=0;i<8&&!code;i++){let c="";for(let j=0;j<4;j++)c+=ch[Math.floor(Math.random()*ch.length)];
+    const sn=await withTimeout(db.ref("sessions/"+c+"/lecturers").once("value"),12000);
+    if(!sn.exists())code=c}
+   if(!code){fail(body,"Could not find a free session code. Please try again.");return}
+   await withTimeout(db.ref("sessions/"+code+"/fixed").remove(),12000);
+  }else{
+   await withTimeout(db.ref("sessions/"+code+"/lecturers").once("value"),12000);
+  }
+ }catch(e){fail(body,"Could not reach the database: "+(e&&e.message||e));return}
+ const net=fbNet(db,code,role);cleanups.push(()=>net.leave());
+ body.replaceChildren();
+ if(role==="student"){
+  body.append(el("p","mu","Session "+code.toUpperCase()));
+  const box=el("div");box.style.cssText="max-width:480px;margin:0 auto";body.append(box);
+  cleanups.push(studentView(box,net));
+ }else{
+  const link=location.href.split("#")[0]+"#join-"+code;
+  const box=el("div");body.append(box);
+  cleanups.push(lecturerView(box,net,code,link));
+ }
+}
+function demo(){
+ const body=screen("Demo",true),bus=demoBus();
+ body.append(el("p","mu","Tap the student buttons on the left and watch the lecturer dashboard on the right. “Simulate classmates” adds random taps from 12 virtual students."));
+ const bar=el("div","row"),sim=el("button","pri","Simulate classmates"),clr=el("button","ghost","Clear simulated");
+ sim.type=clr.type="button";sim.onclick=bus.simulate;clr.onclick=bus.clear;bar.append(sim,clr);body.append(bar);
+ const g=el("div","demo"),a=el("div"),b=el("div");
+ a.append(el("div","lab","Student phone"));const ph=el("div","phone");a.append(ph);
+ b.append(el("div","lab","Lecturer dashboard"));const lh=el("div","card");b.append(lh);
+ g.append(a,b);body.append(g);
+ cleanups.push(studentView(ph,bus.net),lecturerView(lh,bus.net,"",""));
+}
+home();
+const m=/^#join-([a-z0-9]{4})$/i.exec(location.hash);
+if(m)start("student",m[1].toLowerCase());
+</script>
+</body>
+</html>
